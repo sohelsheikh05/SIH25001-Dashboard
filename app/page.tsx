@@ -29,7 +29,7 @@ interface DiseaseData {
   diseases: string[]
   diseaseNames: Record<string, string>
 }
-const apiUrl = "https://water-bourne-disease-prediction-3.onrender.com";
+ const apiUrl = process.env.NEXT_PUBLIC_URL
 
 export default function DiseaseDashboard() {
   const [diseaseData, setDiseaseData] = useState<DiseaseData | null>(null)
@@ -90,7 +90,7 @@ export default function DiseaseDashboard() {
   const fetchDiseaseData = async () => {
     try {
      
-     
+     console.log("Fetching disease data...", apiUrl)
      const response = await fetch( `${apiUrl}/diseases`);
       const data = await response.json()
       

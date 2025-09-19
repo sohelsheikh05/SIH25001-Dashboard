@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Activity } from "lucide-react"
-const apiUrl = "https://water-bourne-disease-prediction-3.onrender.com";
+const apiUrl = process.env.NEXT_PUBLIC_URL
 const NORTHEAST_COORDINATES = {
   assam: {
     Kamrup: { lat: 26.1445, lng: 91.7362 },
@@ -147,7 +147,7 @@ export function DiseaseMap({ state, disease, diseaseData }) {
       }),
   });
   const data = await res.json();
-  
+ 
   if (!data.error) {
     setMapData(data.districts);
     
@@ -197,8 +197,8 @@ data.forEach((district) => {
     iconSize: [24, 24],
     iconAnchor: [12, 12],
   })
-
-  const marker = L.marker([district.coords.lat, district.coords.lng], { icon: markerIcon })
+    
+  const marker = L.marker([district.coords[0], district.coords[1]], { icon: markerIcon })
     .addTo(map)
     .bindPopup(`
       <div class="p-2">
