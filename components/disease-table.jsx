@@ -5,43 +5,68 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Search, TrendingUp, TrendingDown, Minus } from "lucide-react"
-
-export function DiseaseTable({ state, disease, diseaseData }) {
+const apiUrl = process.env.NEXT_PUBLIC_URL;
+export function DiseaseTable({ selectedDisease, selectedState,diseaseData }) {
   const [tableData, setTableData] = useState([])
   const [filteredData, setFilteredData] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (state && disease && diseaseData) {
+    if (selectedState && selectedDisease) {
       loadTableData()
     }
-  }, [state, disease, diseaseData])
+  }, [selectedState, selectedDisease])
 
   useEffect(() => {
     // Filter data based on search term
-    const filtered = tableData.filter((item) => item.district.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filtered = tableData.filter((item) =>
+  item.district?.toLowerCase().includes(searchTerm.toLowerCase())
+)
+
+setFilteredData(filtered)
+
     setFilteredData(filtered)
+    
   }, [tableData, searchTerm])
 
-  const loadTableData = async () => {
-    setLoading(true)
-    try {
-      // Get data from the passed diseaseData prop instead of making API call
-      const stateData = diseaseData.states.find((s) => s.id === state)
-      if (stateData) {
-        const districtData = stateData.districts.map((district) => ({
-          district: district.name,
-          cases: district[disease] || 0,
-        }))
-        setTableData(districtData.sort((a, b) => b.cases - a.cases))
-      }
-    } catch (error) {
-      console.error("Error loading table data:", error)
-    } finally {
-      setLoading(false)
+ const loadTableData = async () => {
+  setLoading(true)
+  try {
+   
+    const res = await fetch(`${apiUrl}/predict_state`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        "state": selectedState,
+        "target": selectedDisease,
+        "date": "2023-12-12"   // e.g., "diarrhea_cases"
+      }),
+    })
+   
+    if (!res.ok) throw new Error("Failed to fetch data")
+    const data = await res.json()
+    
+    if (data.error) {
+      console.error("API error:", data.error)
+      setTableData([])
+      return
     }
+
+    // Map forecast into table data
+    const districtData = data.predictions.map((f) => ({
+      district: f.district,
+      cases: f.cases,
+    }))
+
+    setTableData(districtData.sort((a, b) => b.cases - a.cases))
+  } catch (error) {
+    console.error("Error loading table data:", error)
+  } finally {
+    setLoading(false)
   }
+}
+
 
   const getRiskLevel = (cases) => {
     if (cases >= 70) return { level: "High", color: "destructive", icon: TrendingUp }
@@ -92,7 +117,7 @@ export function DiseaseTable({ state, disease, diseaseData }) {
             {filteredData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                  {searchTerm ? "No districts found matching your search." : "No data available."}
+                  {searchTerm ? "No districts found matching your search."  : "No data available."}
                 </TableCell>
               </TableRow>
             ) : (

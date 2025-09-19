@@ -8,6 +8,12 @@ import { DiseaseTable } from "@/components/disease-table"
 import { DiseaseMap } from "@/components/disease-map"
 import { Activity, MapPin, TrendingUp, AlertTriangle } from "lucide-react"
 
+const diseasePrettyName: { [key: string]: string } = {
+  diarrhea_cases: "Diarrhea",
+  enteric_fever_cases: "Enteric Fever",
+  je_cases: "Japanese Encephalitis",
+};
+
 interface DiseaseData {
   states: Array<{
     id: string
@@ -23,53 +29,133 @@ interface DiseaseData {
   diseases: string[]
   diseaseNames: Record<string, string>
 }
+const apiUrl = process.env.NEXT_PUBLIC_URL;
 
 export default function DiseaseDashboard() {
   const [diseaseData, setDiseaseData] = useState<DiseaseData | null>(null)
-  const [selectedState, setSelectedState] = useState<string>("")
-  const [selectedDisease, setSelectedDisease] = useState<string>("cholera")
+  const [selectedState, setSelectedState] = useState<string>("Meghalaya")
+  const [selectedDisease, setSelectedDisease] = useState<string>("diarrhea_cases")
   const [loading, setLoading] = useState(true)
+  const diseaseStates= {
+    "Arunachal Pradesh": [
+        "Tawang", "West Kameng", "East Kameng", "Papum Pare", "Kurung Kumey",
+        "Kra Daadi", "Lower Subansiri", "Upper Subansiri", "West Siang",
+        "East Siang", "Siang", "Upper Siang", "Lower Siang", "Lower Dibang Valley",
+        "Dibang Valley", "Anjaw", "Lohit", "Namsai", "Changlang", "Tirap",
+        "Longding"
+    ],
+    "Assam": [
+        "Baksa", "Barpeta", "Biswanath", "Bongaigaon", "Cachar", "Charaideo",
+        "Chirang", "Darrang", "Dhemaji", "Dhubri", "Dibrugarh", "Goalpara",
+        "Golaghat", "Hailakandi", "Hojai", "Jorhat", "Kamrup", "Kamrup Metropolitan",
+        "Karbi Anglong", "Karimganj", "Kokrajhar", "Lakhimpur", "Majuli",
+        "Morigaon", "Nagaon", "Nalbari", "Dima Hasao", "Sivasagar", "Sonitpur",
+        "South Salmara-Mankachar", "Tinsukia", "Udalguri", "West Karbi Anglong"
+    ],
+    "Manipur": [
+        "Bishnupur", "Chandel", "Churachandpur", "Imphal East", "Imphal West",
+        "Jiribam", "Kakching", "Kamjong", "Kangpokpi", "Noney", "Pherzawl",
+        "Senapati", "Tamenglong", "Tengnoupal", "Thoubal", "Ukhrul"
+    ],
+    "Meghalaya": [
+        "East Garo Hills", "West Garo Hills", "North Garo Hills", "South Garo Hills",
+        "South West Garo Hills", "East Khasi Hills", "West Khasi Hills",
+        "South West Khasi Hills", "Ri Bhoi", "West Jaintia Hills", "East Jaintia Hills"
+    ],
+    "Mizoram": [
+        "Aizawl", "Champhai", "Kolasib", "Lawngtlai", "Lunglei",
+        "Mamit", "Saiha", "Serchhip", "Hnahthial", "Khawzawl", "Saitual"
+    ],
+    "Nagaland": [
+        "Dimapur", "Kiphire", "Kohima", "Longleng", "Mokokchung",
+        "Mon", "Peren", "Phek", "Tuensang", "Wokha", "Zunheboto",
+        "Chümoukedima", "Niuland", "Tseminyu", "Shamator"
+    ],
+    "Sikkim": [
+        "East Sikkim", "West Sikkim", "North Sikkim", "South Sikkim",
+        "Pakyong", "Soreng"
+    ],
+    "Tripura": [
+        "Dhalai", "Gomati", "Khowai", "North Tripura", "Sepahijala",
+        "South Tripura", "Unakoti", "West Tripura"
+    ]
+}
+
 
   useEffect(() => {
     fetchDiseaseData()
+    
   }, [])
 
   const fetchDiseaseData = async () => {
     try {
-      const response = await fetch("/api/diseases")
+     
+     
+     const response = await fetch( `${apiUrl}/diseases`);
       const data = await response.json()
+      
+      
       setDiseaseData(data)
-      setSelectedState(data.states[0]?.id || "")
+      setSelectedState(data.states?.id || "")
     } catch (error) {
       console.error("Error fetching disease data:", error)
     } finally {
       setLoading(false)
     }
   }
-
-  const getTotalCases = () => {
-    if (!diseaseData) return 0
-    return diseaseData.states.reduce((total, state) => {
-      return (
-        total +
-        state.districts.reduce((stateTotal, district) => {
-          return stateTotal + ((district[selectedDisease as keyof typeof district] as number) || 0)
-        }, 0)
-      )
-    }, 0)
-  }
-
-  const getHighRiskDistricts = () => {
-    if (!diseaseData) return 0
-    let highRiskCount = 0
-    diseaseData.states.forEach((state) => {
-      state.districts.forEach((district) => {
-        const cases = (district[selectedDisease as keyof typeof district] as number) || 0
-        if (cases > 50) highRiskCount++
-      })
+ 
+  const [totalCases, setTotalCases] = useState<number>(0)
+useEffect(() => {
+  getTotalCases(selectedState, selectedDisease)
+},[selectedState, selectedDisease])
+const getTotalCases = async (state: string, selectedDisease: string) => {
+  if (!state || !selectedDisease) return
+  
+  try {
+    const response = await fetch(`${apiUrl}/total_cases_by_state`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        state,
+        disease: selectedDisease,
+      }),
     })
-    return highRiskCount
+
+    const data = await response.json()
+    
+    if (data.total_cases !== undefined) {
+      setTotalCases(parseInt(data.total_cases, 10))
+    } else {
+      setTotalCases(0) // fallback if error
+      console.error("Error fetching cases:", data.error)
+    }
+    
+  } catch (error) {
+    console.error("API error:", error)
+    setTotalCases(0)
   }
+}
+const prettyDiseaseName = (name: string | undefined) => {
+  if (!name) return ""
+  return name
+    .replace("_cases", "")       // remove suffix
+    .replace(/_/g, " ")          // underscores → spaces
+    .replace(/\b\w/g, c => c.toUpperCase()) // capitalize
+}
+
+// const getHighRiskDistricts = (threshold = 50) => {
+//   if (!diseaseData || !selectedDisease) return 0;
+
+//   return diseaseData.states.reduce((count, state) => {
+//     const riskyDistricts = state.districts.filter((district: any) => {
+//       const cases = Number(district[selectedDisease]) || 0;
+//       return cases > threshold;
+//     });
+//     return count + riskyDistricts.length;
+//   }, 0);
+// };
 
   if (loading) {
     return (
@@ -90,7 +176,7 @@ export default function DiseaseDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
-                <Activity className="h-6 w-6 text-primary" />
+                <Activity className="h-6 w-6 text-primary" />165
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-balance">Water-borne Disease Prediction Dashboard</h1>
@@ -114,9 +200,10 @@ export default function DiseaseDashboard() {
                 <SelectValue placeholder="Choose a state" />
               </SelectTrigger>
               <SelectContent>
-                {diseaseData?.states.map((state) => (
-                  <SelectItem key={state.id} value={state.id}>
-                    {state.name}
+                 {
+                 Object.keys(diseaseStates).map((state) => (
+                  <SelectItem key={state} value={state}>
+                    {state}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -130,10 +217,12 @@ export default function DiseaseDashboard() {
               </SelectTrigger>
               <SelectContent>
                 {diseaseData?.diseases.map((disease) => (
-                  <SelectItem key={disease} value={disease}>
-                    {diseaseData.diseaseNames[disease]}
-                  </SelectItem>
-                ))}
+  <SelectItem key={disease} value={disease}>
+    {diseasePrettyName[disease as keyof typeof diseasePrettyName]}
+  </SelectItem>
+))}
+
+
               </SelectContent>
             </Select>
           </div>
@@ -147,9 +236,9 @@ export default function DiseaseDashboard() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{getTotalCases().toLocaleString()}</div>
+              <div className="text-2xl font-bold text-primary">{totalCases}</div>
               <p className="text-xs text-muted-foreground">
-                {diseaseData?.diseaseNames[selectedDisease]} across all states
+                <p>{prettyDiseaseName(selectedDisease)}</p> across all states
               </p>
             </CardContent>
           </Card>
@@ -160,7 +249,7 @@ export default function DiseaseDashboard() {
               <AlertTriangle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-destructive">{getHighRiskDistricts()}</div>
+              {/* <div className="text-2xl font-bold text-destructive">{getHighRiskDistricts()}</div> */}
               <p className="text-xs text-muted-foreground">Districts with &gt;50 predicted cases</p>
             </CardContent>
           </Card>
@@ -171,7 +260,7 @@ export default function DiseaseDashboard() {
               <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{diseaseData?.states.length || 0}</div>
+              {/* <div className="text-2xl font-bold text-primary">{diseaseData?diseaseData.length || 0}</div> */}
               <p className="text-xs text-muted-foreground">Northeast India coverage</p>
             </CardContent>
           </Card>
@@ -185,9 +274,9 @@ export default function DiseaseDashboard() {
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 Disease Distribution Map
-              </CardTitle>
+              </CardTitle>                                  {/* {diseaseData?.diseaseNames[selectedDisease]} */ }
               <CardDescription>
-                Color-coded visualization of {diseaseData?.diseaseNames[selectedDisease]} cases by district
+                Color-coded visualization of  cases by district
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -205,7 +294,7 @@ export default function DiseaseDashboard() {
               <CardDescription>Detailed breakdown of predicted cases by district</CardDescription>
             </CardHeader>
             <CardContent>
-              <DiseaseTable state={selectedState} disease={selectedDisease} diseaseData={diseaseData} />
+              <DiseaseTable selectedState={selectedState} selectedDisease={selectedDisease} diseaseData={diseaseData} />
             </CardContent>
           </Card>
         </div>

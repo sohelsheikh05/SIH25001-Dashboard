@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Activity } from "lucide-react"
-
+const apiUrl = process.env.NEXT_PUBLIC_URL;
 const NORTHEAST_COORDINATES = {
   assam: {
     Kamrup: { lat: 26.1445, lng: 91.7362 },
@@ -26,16 +26,16 @@ const NORTHEAST_COORDINATES = {
   manipur: {
     "Imphal East": { lat: 24.817, lng: 93.9368 },
     "Imphal West": { lat: 24.817, lng: 93.9368 },
-    Thoubal: { lat: 24.6333, lng: 94.0167 },
-    Bishnupur: { lat: 24.6167, lng: 93.7833 },
-    Senapati: { lat: 25.2667, lng: 94.0167 },
+    "Thoubal": { lat: 24.6333, lng: 94.0167 },
+    "Bishnupur": { lat: 24.6167, lng: 93.7833 },
+    "Senapati": { lat: 25.2667, lng: 94.0167 },
   },
   meghalaya: {
     "East Khasi Hills": { lat: 25.5788, lng: 91.8933 },
     "West Garo Hills": { lat: 25.5138, lng: 90.2022 },
     "Jaintia Hills": { lat: 25.45, lng: 92.2 },
     "Ri Bhoi": { lat: 25.9, lng: 91.8833 },
-    Baghmara: { lat: 25.2167, lng: 90.6333 },
+    "Baghmara": { lat: 25.2167, lng: 90.6333 },
   },
   mizoram: {
     Aizawl: { lat: 23.7367, lng: 92.7173 },
@@ -135,31 +135,28 @@ export function DiseaseMap({ state, disease, diseaseData }) {
     }
   }
 
-  const loadMapData = async () => {
-    if (!mapInstanceRef.current) return
+  const loadMapData = async ( disease,district) => {
 
-    setLoading(true)
-    try {
-      const stateData = diseaseData.states.find((s) => s.id === state)
-      if (stateData) {
-        const coordinates = NORTHEAST_COORDINATES[state] || {}
-
-        const districtData = stateData.districts.map((district) => ({
-          district: district.name,
-          cases: district[disease] || 0,
-          lat: coordinates[district.name]?.lat || 26.2006,
-          lng: coordinates[district.name]?.lng || 92.9376,
-        }))
-
-        setMapData(districtData)
-        addMarkersToMap(districtData)
-      }
-    } catch (error) {
-      console.error("Error loading map data:", error)
-    } finally {
-      setLoading(false)
-    }
+  const res = await fetch(`${apiUrl}/predict_state`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+        "state": state,
+        "target": "diarrhea_cases",
+        "date": "2023-12-12"   // e.g., "diarrhea_cases"
+      }),
+  });
+  const data = await res.json();
+  
+  if (!data.error) {
+    setMapData(data.districts);
+    
+    addMarkersToMap(data.predictions);
+  } else {
+    console.error(data.error);
   }
+};
+
 
   const addMarkersToMap = (data) => {
     if (!mapInstanceRef.current) return
@@ -175,50 +172,67 @@ export function DiseaseMap({ state, disease, diseaseData }) {
     })
 
     // Add new markers
-    data.forEach((district) => {
-      const color = getMarkerColor(district.cases)
-      const size = getMarkerSize(district.cases)
+    // Suppose "data" is the API response
+    
+   
+data.forEach((district) => {
+  
 
-      // Create custom marker icon based on risk level
-      const markerIcon = L.divIcon({
-        className: "custom-marker",
-        html: `
-          <div class="relative">
-            <div class="w-6 h-6 ${color} rounded-full border-2 border-white shadow-lg flex items-center justify-center">
-              <div class="w-2 h-2 bg-white rounded-full"></div>
-            </div>
-            <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 text-xs font-medium whitespace-nowrap bg-white px-2 py-1 rounded shadow-sm border">
-              ${district.district}
-            </div>
+  const color = getMarkerColor(district.cases)
+  const size = getMarkerSize(district.cases)
+
+  // Create custom marker icon based on risk level
+  const markerIcon = L.divIcon({
+    className: "custom-marker",
+    html: `
+      <div class="relative">
+        <div class="w-6 h-6 ${color} rounded-full border-2 border-white shadow-lg flex items-center justify-center">
+          <div class="w-2 h-2 bg-white rounded-full"></div>
+        </div>
+        <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 text-xs font-medium whitespace-nowrap bg-white px-2 py-1 rounded shadow-sm border">
+          ${district.district}
+        </div>
+      </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  })
+
+  const marker = L.marker([district.coords.lat, district.coords.lng], { icon: markerIcon })
+    .addTo(map)
+    .bindPopup(`
+      <div class="p-2">
+        <h4 class="font-semibold text-sm">${district.district}</h4>
+        <div class="mt-2 space-y-1 text-xs">
+          <div class="flex justify-between">
+            <span>Predicted Cases:</span>
+            <span class="font-bold">${district.cases.toFixed(2)}</span>
           </div>
-        `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-      })
-
-      const marker = L.marker([district.lat, district.lng], { icon: markerIcon })
-        .addTo(map)
-        .bindPopup(`
-          <div class="p-2">
-            <h4 class="font-semibold text-sm">${district.district}</h4>
-            <div class="mt-2 space-y-1">
-              <div class="flex justify-between text-xs">
-                <span>Predicted Cases:</span>
-                <span class="font-bold">${district.cases}</span>
-              </div>
-              <div class="text-xs">
-                <span class="inline-block px-2 py-1 rounded text-white ${color}">
-                  ${getRiskLevel(district.cases)}
-                </span>
-              </div>
-            </div>
+          <div class="flex justify-between">
+            <span>CI Lower:</span>
+            <span>${district.mean_ci_lower.toFixed(2)}</span>
           </div>
-        `)
+          <div class="flex justify-between">
+            <span>CI Upper:</span>
+            <span>${district.mean_ci_upper.toFixed(2)}</span>
+          </div>
+          <div class="mt-1">
+            <span class="inline-block px-2 py-1 rounded text-white ${color}">
+              ${getRiskLevel(district.cases)}
+            </span>
+          </div>
+          <div class="mt-1">
+            <span>Date:</span> ${district.date}
+          </div>
+        </div>
+      </div>
+    `)
 
-      marker.on("click", () => {
-        setSelectedDistrict(selectedDistrict === district.district ? null : district.district)
-      })
-    })
+  marker.on("click", () => {
+    setSelectedDistrict(selectedDistrict === district.district ? null : district.district)
+  })
+})
+
 
     // Fit map to show all markers
     if (data.length > 0) {
@@ -281,21 +295,7 @@ export function DiseaseMap({ state, disease, diseaseData }) {
       </div>
 
       {/* District Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {mapData.slice(0, 6).map((district) => (
-          <Card
-            key={district.district}
-            className={`p-3 cursor-pointer transition-colors hover:bg-muted/50 ${
-              selectedDistrict === district.district ? "ring-2 ring-primary" : ""
-            }`}
-            onClick={() => setSelectedDistrict(selectedDistrict === district.district ? null : district.district)}
-          >
-            <div className="text-sm font-medium truncate">{district.district}</div>
-            <div className="text-lg font-bold text-primary">{district.cases}</div>
-            <div className="text-xs text-muted-foreground">{getRiskLevel(district.cases)}</div>
-          </Card>
-        ))}
-      </div>
+    
     </div>
   )
 }
