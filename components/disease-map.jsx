@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Activity } from "lucide-react"
-const apiUrl = process.env.NEXT_PUBLIC_URL;
+const apiUrl = "https://water-bourne-disease-prediction-3.onrender.com";
 const NORTHEAST_COORDINATES = {
   assam: {
     Kamrup: { lat: 26.1445, lng: 91.7362 },

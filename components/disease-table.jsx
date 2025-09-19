@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Search, TrendingUp, TrendingDown, Minus } from "lucide-react"
-const apiUrl = process.env.NEXT_PUBLIC_URL;
+const apiUrl = "https://water-bourne-disease-prediction-3.onrender.com";
 export function DiseaseTable({ selectedDisease, selectedState,diseaseData }) {
   const [tableData, setTableData] = useState([])
   const [filteredData, setFilteredData] = useState([])
