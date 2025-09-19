@@ -93,7 +93,7 @@ export default function DiseaseDashboard() {
      console.log("Fetching disease data...", apiUrl)
      const response = await fetch( `${apiUrl}/diseases`);
       const data = await response.json()
-      
+      console.log("Fetched disease data:", data)
       
       setDiseaseData(data)
       setSelectedState(data.states?.id || "")
@@ -120,11 +120,12 @@ const getTotalCases = async (state: string, selectedDisease: string) => {
       body: JSON.stringify({
         state,
         disease: selectedDisease,
+        date: "2023-12-06",
       }),
     })
 
     const data = await response.json()
-    
+    console.log("Fetched total cases:", data)
     if (data.total_cases !== undefined) {
       setTotalCases(parseInt(data.total_cases, 10))
     } else {
@@ -175,9 +176,9 @@ const prettyDiseaseName = (name: string | undefined) => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
+              {/* <div className="p-2 bg-primary/10 rounded-lg">
                 <Activity className="h-6 w-6 text-primary" />165
-              </div>
+              </div> */}
               <div>
                 <h1 className="text-2xl font-bold text-balance">Water-borne Disease Prediction Dashboard</h1>
                 <p className="text-muted-foreground">Northeast India Health Monitoring System</p>
@@ -243,27 +244,27 @@ const prettyDiseaseName = (name: string | undefined) => {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">High Risk Districts</CardTitle>
               <AlertTriangle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              {/* <div className="text-2xl font-bold text-destructive">{getHighRiskDistricts()}</div> */}
-              <p className="text-xs text-muted-foreground">Districts with &gt;50 predicted cases</p>
+              <div className="text-2xl font-bold text-destructive">{getHighRiskDistricts()}</div>
+              <p className="text-xs text-muted-foreground">Districts with &gt;40 predicted cases</p>
             </CardContent>
-          </Card>
+          </Card> */}
 
-          <Card>
+          {/* <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">States Monitored</CardTitle>
               <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {/* <div className="text-2xl font-bold text-primary">{diseaseData?diseaseData.length || 0}</div> */}
-              <p className="text-xs text-muted-foreground">Northeast India coverage</p>
+              {/* <p className="text-xs text-muted-foreground">Northeast India coverage</p>
             </CardContent>
-          </Card>
+          </Card> */} 
         </div>
 
         {/* Main Content Grid */}
