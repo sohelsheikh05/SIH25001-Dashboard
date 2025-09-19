@@ -29,7 +29,7 @@ interface DiseaseData {
   diseases: string[]
   diseaseNames: Record<string, string>
 }
-const apiUrl = process.env.NEXT_PUBLIC_URL;
+const apiUrl = "https://water-bourne-disease-prediction-3.onrender.com";
 
 export default function DiseaseDashboard() {
   const [diseaseData, setDiseaseData] = useState<DiseaseData | null>(null)
