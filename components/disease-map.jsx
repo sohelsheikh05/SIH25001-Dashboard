@@ -142,7 +142,7 @@ export function DiseaseMap({ state, disease, diseaseData }) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
         "state": state,
-        "target": "diarrhea_cases",
+        "target": disease,
         "date": "2023-12-12"   // e.g., "diarrhea_cases"
       }),
   });
