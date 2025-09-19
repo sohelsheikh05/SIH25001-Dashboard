@@ -135,8 +135,8 @@ export function DiseaseMap({ state, disease, diseaseData }) {
     }
   }
 
-  const loadMapData = async ( disease,district) => {
-
+  const loadMapData = async () => {
+ console.log("Loading map data...", state, disease)
   const res = await fetch(`${apiUrl}/predict_state`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
